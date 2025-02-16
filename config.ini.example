@@ -1,0 +1,6 @@
+[DEFAULT]
+accessType = http
+url = 192.168.8.181
+PhaseL1 = 2
+SwitchL2L3 = no
+SignOfLifeLog = 0
