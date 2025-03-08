@@ -9,6 +9,11 @@ This code and its documentation can be found on: https://github.com/RalfZim/venu
 Used https://github.com/victronenergy/velib_python/blob/master/dbusdummyservice.py as basis for this service.
 Reading information from the Fronius Smart Meter via http REST API and puts the info on dbus.
 """
+
+import dbus 
+import atexit
+
+
 import platform 
 import logging
 import sys
@@ -21,6 +26,7 @@ else:
 
 import sys
 import requests # for http GET
+import configparser # for config/ini file
 try:
   import thread   # for daemon = True  / Python 2.x
 except:
@@ -38,13 +44,13 @@ class DbusGoeControllerService:
     config = self._getConfig()
     self._accessType = config['DEFAULT']['AccessType']
     self._host = config['DEFAULT']['Host'];
-    if accessType == 'ModBus':
+    if self._accessType == 'ModBus':
        logging.info("Access via Modbus")
     else:
        logging.info("Access via Http")
        self._url = "http://%s/api/status?filter=isv,ccp,usv,cec,fwv" % (self._host)
     self._SetL1 = config['DEFAULT'].getint('PhaseL1',1);
-    self._SwithcL2L3 = config['DEFAULT'].getboolean('SwitchL1L2',False);
+    self._SwitchL2L3 = config['DEFAULT'].getboolean('SwitchL1L2',False);
     
     self._dbusservice = VeDbusService(servicename,register=False)
     self._paths = paths
@@ -71,7 +77,7 @@ class DbusGoeControllerService:
 
     self._dbusservice.register()
 
-    gobject.timeout_add(1000, self._update) # pause 1000ms before the next request
+    gobject.timeout_add(config['DEFAULT'].getint('Rate',1000), self._update) # pause 1000ms before the next request
     
     # add _signOfLife 'timer' to get feedback in log every 5minutes
     # 
@@ -92,7 +98,7 @@ class DbusGoeControllerService:
 
   def _update(self):
     try:
-      #meter_url = "http://192.168.8.181/api/status?filter=isv,ccp,usv,cec,fwv"
+      meter_url = "http://192.168.8.181/api/status?filter=isv,ccp,usv,cec,fwv"
 
       
       meter_r = requests.get(url=self._url) # request data from the Fronius PV inverter
@@ -109,12 +115,18 @@ class DbusGoeControllerService:
 #        meter_data['Body']['Data']['PowerReal_P_Phase_3'] = 0
 #      print("Power=",round((meter_data['ccp'][0]),2))
 
-      self._dbusservice['/Ac/Power'] = round((meter_data['ccp'][0]),2) # positive: consumption, negative: feed into grid
+      self._dbusservice['/Ac/Power'] = round((meter_data['ccp'][1]),2) # positive: consumption, negative: feed into grid
+      
+      #print("AC-Power",round((meter_data['ccp'][1]),2))
+      
       if self._SetL1==2:      
+        #print("AC-Power L1",round((meter_data['isv'][1]['p']),2))
         self._dbusservice["/Ac/L1/Voltage"] = round((meter_data['usv'][0]['u2']),2)
         self._dbusservice['/Ac/L1/Current'] = round((meter_data['isv'][1]['i']),2)
         self._dbusservice['/Ac/L1/Power'] = round((meter_data['isv'][1]['p']),2)
-        if self._SwitchL2L3:
+        if self._SwitchL2L3==True:
+          #print("AC-Power L2",round((meter_data['isv'][2]['p']),2))
+          #print("AC-Power L3",round((meter_data['isv'][0]['p']),2))
           self._dbusservice['/Ac/L2/Voltage'] = round((meter_data['usv'][0]['u3']),2)
           self._dbusservice['/Ac/L2/Current'] = round((meter_data['isv'][2]['i']),2)
           self._dbusservice['/Ac/L2/Power'] = round((meter_data['isv'][2]['p']),2)
@@ -122,6 +134,8 @@ class DbusGoeControllerService:
           self._dbusservice['/Ac/L3/Current'] = round((meter_data['isv'][0]['i']),2)
           self._dbusservice['/Ac/L3/Power'] = round((meter_data['isv'][0]['p']),2)
         else:
+          #print("AC-Power L2",round((meter_data['isv'][0]['p']),2))
+          #print("AC-Power L3",round((meter_data['isv'][2]['p']),2))
           self._dbusservice['/Ac/L2/Voltage'] = round((meter_data['usv'][0]['u1']),2)
           self._dbusservice['/Ac/L2/Current'] = round((meter_data['isv'][0]['i']),2)
           self._dbusservice['/Ac/L2/Power'] = round((meter_data['isv'][0]['p']),2)
@@ -132,7 +146,7 @@ class DbusGoeControllerService:
         self._dbusservice["/Ac/L1/Voltage"] = round((meter_data['usv'][0]['u3']),2)
         self._dbusservice['/Ac/L1/Current'] = round((meter_data['isv'][2]['i']),2)
         self._dbusservice['/Ac/L1/Power'] = round((meter_data['isv'][2]['p']),2)        
-        if self._SwitchL2L3:
+        if self._SwitchL2L3==True:
           self._dbusservice['/Ac/L2/Voltage'] = round((meter_data['usv'][0]['u2']),2)
           self._dbusservice['/Ac/L2/Current'] = round((meter_data['isv'][1]['i']),2)
           self._dbusservice['/Ac/L2/Power'] = round((meter_data['isv'][1]['p']),2)
@@ -150,7 +164,7 @@ class DbusGoeControllerService:
         self._dbusservice["/Ac/L1/Voltage"] = round((meter_data['usv'][0]['u1']),2)
         self._dbusservice['/Ac/L1/Current'] = round((meter_data['isv'][0]['i']),2)
         self._dbusservice['/Ac/L1/Power'] = round((meter_data['isv'][0]['p']),2)        
-        if self._SwitchL2L3:
+        if self._SwitchL2L3==True:
           self._dbusservice['/Ac/L2/Voltage'] = round((meter_data['usv'][0]['u3']),2)
           self._dbusservice['/Ac/L2/Current'] = round((meter_data['isv'][2]['i']),2)
           self._dbusservice['/Ac/L2/Power'] = round((meter_data['isv'][2]['p']),2)
@@ -172,8 +186,8 @@ class DbusGoeControllerService:
       self._dbusservice['/Ac/Energy/Reverse'] = round(((meter_data['cec'][0][1])/1000),4)
 #      logging.info("House Consumption: {:.0f}".format(meter_consumption))
     except:
-      logging.info("WARNING: Could not read from Fronius PV inverter")
-      self._dbusservice['/Ac/Power'] = 1  # TODO: any better idea to signal an issue?
+      logging.info("WARNING: Could not read from Go-E Controller SmartMeter")
+      #self._dbusservice['/Ac/Power'] = 1  # TODO: any better idea to signal an issue?
     # increment UpdateIndex - to show that new data is available
     index = self._dbusservice[path_UpdateIndex] + 1  # increment index
     if index > 255:   # maximum value of the index
@@ -185,8 +199,18 @@ class DbusGoeControllerService:
     logging.debug("someone else updated %s to %s" % (path, value))
     return True # accept the change
 
+def end():
+  print('Close ... start');
+  
+  print('Close ... end');
+
 def main():
-  logging.basicConfig(level=logging.DEBUG) # use .INFO for less logging
+  atexit.register(end)
+  logging.basicConfig(filename=("%s/goeController.log" % (os.path.dirname(os.path.realpath(__file__)))), 
+                        filemode='w', 
+                        format='%(asctime)s %(levelname)-8s %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S', 
+                        level=logging.INFO) # use .INFO for less logging
   thread.daemon = True # allow the program to quit
 
   from dbus.mainloop.glib import DBusGMainLoop
