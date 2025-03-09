@@ -96,6 +96,14 @@ class DbusGoeControllerService:
     logging.info("--- End: sign of life ---")
     return True
 
+  def _setCurrent(self, current, power):
+    if power>0 and current<0:
+       return current*-1.0
+    elif power<0 and current>0:
+       return current*-1.0
+    else:
+       return current
+
   def _update(self):
     try:
       meter_url = "http://192.168.8.181/api/status?filter=isv,ccp,usv,cec,fwv"
@@ -121,63 +129,78 @@ class DbusGoeControllerService:
       
       if self._SetL1==2:      
         #print("AC-Power L1",round((meter_data['isv'][1]['p']),2))
-        self._dbusservice["/Ac/L1/Voltage"] = round((meter_data['usv'][0]['u2']),2)
-        self._dbusservice['/Ac/L1/Current'] = round((meter_data['isv'][1]['i']),2)
-        self._dbusservice['/Ac/L1/Power'] = round((meter_data['isv'][1]['p']),2)
+        power = round((meter_data['isv'][1]['p']),2)
+        self._dbusservice['/Ac/L1/Voltage'] = round((meter_data['usv'][0]['u2']),2)
+        self._dbusservice['/Ac/L1/Current'] = self._setCurrent(round((meter_data['isv'][1]['i']),2), power)
+        self._dbusservice['/Ac/L1/Power'] = power
         if self._SwitchL2L3==True:
           #print("AC-Power L2",round((meter_data['isv'][2]['p']),2))
           #print("AC-Power L3",round((meter_data['isv'][0]['p']),2))
+          power = round((meter_data['isv'][2]['p']),2)
           self._dbusservice['/Ac/L2/Voltage'] = round((meter_data['usv'][0]['u3']),2)
-          self._dbusservice['/Ac/L2/Current'] = round((meter_data['isv'][2]['i']),2)
-          self._dbusservice['/Ac/L2/Power'] = round((meter_data['isv'][2]['p']),2)
+          self._dbusservice['/Ac/L2/Current'] = self._setCurrent(round((meter_data['isv'][2]['i']),2), power)
+          self._dbusservice['/Ac/L2/Power'] = power
+          power = round((meter_data['isv'][0]['p']),2)
           self._dbusservice['/Ac/L3/Voltage'] = round((meter_data['usv'][0]['u1']),2)
-          self._dbusservice['/Ac/L3/Current'] = round((meter_data['isv'][0]['i']),2)
-          self._dbusservice['/Ac/L3/Power'] = round((meter_data['isv'][0]['p']),2)
+          self._dbusservice['/Ac/L3/Current'] = self._setCurrent(round((meter_data['isv'][0]['i']),2), power)
+          self._dbusservice['/Ac/L3/Power'] = power
         else:
-          #print("AC-Power L2",round((meter_data['isv'][0]['p']),2))
-          #print("AC-Power L3",round((meter_data['isv'][2]['p']),2))
+          print("AC-Power L2",round((meter_data['isv'][0]['p']),2))
+          print("AC-Power L3",round((meter_data['isv'][2]['p']),2))
+          power = round((meter_data['isv'][0]['p']),2)
           self._dbusservice['/Ac/L2/Voltage'] = round((meter_data['usv'][0]['u1']),2)
-          self._dbusservice['/Ac/L2/Current'] = round((meter_data['isv'][0]['i']),2)
-          self._dbusservice['/Ac/L2/Power'] = round((meter_data['isv'][0]['p']),2)
+          self._dbusservice['/Ac/L2/Current'] = self._setCurrent(round((meter_data['isv'][0]['i']),2), power)
+          self._dbusservice['/Ac/L2/Power'] = power
+          power = round((meter_data['isv'][2]['p']),2)
           self._dbusservice['/Ac/L3/Voltage'] = round((meter_data['usv'][0]['u3']),2)
-          self._dbusservice['/Ac/L3/Current'] = round((meter_data['isv'][2]['i']),2)
-          self._dbusservice['/Ac/L3/Power'] = round((meter_data['isv'][2]['p']),2)
+          self._dbusservice['/Ac/L3/Current'] = self._setCurrent(round((meter_data['isv'][2]['i']),2), power)
+          self._dbusservice['/Ac/L3/Power'] = power
       elif self._SetL1==3:     
+        power = round((meter_data['isv'][2]['p']),2)
         self._dbusservice["/Ac/L1/Voltage"] = round((meter_data['usv'][0]['u3']),2)
-        self._dbusservice['/Ac/L1/Current'] = round((meter_data['isv'][2]['i']),2)
-        self._dbusservice['/Ac/L1/Power'] = round((meter_data['isv'][2]['p']),2)        
+        self._dbusservice['/Ac/L1/Current'] = self._setCurrent(round((meter_data['isv'][2]['i']),2), power)
+        self._dbusservice['/Ac/L1/Power'] = power
         if self._SwitchL2L3==True:
+          power = round((meter_data['isv'][1]['p']),2)
           self._dbusservice['/Ac/L2/Voltage'] = round((meter_data['usv'][0]['u2']),2)
-          self._dbusservice['/Ac/L2/Current'] = round((meter_data['isv'][1]['i']),2)
-          self._dbusservice['/Ac/L2/Power'] = round((meter_data['isv'][1]['p']),2)
+          self._dbusservice['/Ac/L2/Current'] = self._setCurrent(round((meter_data['isv'][1]['i']),2), power)
+          self._dbusservice['/Ac/L2/Power'] = power
+          power = round((meter_data['isv'][0]['p']),2)
           self._dbusservice['/Ac/L3/Voltage'] = round((meter_data['usv'][0]['u1']),2)
-          self._dbusservice['/Ac/L3/Current'] = round((meter_data['isv'][0]['i']),2)
-          self._dbusservice['/Ac/L3/Power'] = round((meter_data['isv'][0]['p']),2)
+          self._dbusservice['/Ac/L3/Current'] = self._setCurrent(round((meter_data['isv'][0]['i']),2), power)
+          self._dbusservice['/Ac/L3/Power'] = power
         else:
+          power = round((meter_data['isv'][0]['p']),2)
           self._dbusservice['/Ac/L2/Voltage'] = round((meter_data['usv'][0]['u1']),2)
-          self._dbusservice['/Ac/L2/Current'] = round((meter_data['isv'][0]['i']),2)
-          self._dbusservice['/Ac/L2/Power'] = round((meter_data['isv'][0]['p']),2)
+          self._dbusservice['/Ac/L2/Current'] = self._setCurrent(round((meter_data['isv'][0]['i']),2), power)
+          self._dbusservice['/Ac/L2/Power'] = power
+          power = round((meter_data['isv'][1]['p']),2)
           self._dbusservice['/Ac/L3/Voltage'] = round((meter_data['usv'][0]['u2']),2)
-          self._dbusservice['/Ac/L3/Current'] = round((meter_data['isv'][1]['i']),2)
-          self._dbusservice['/Ac/L3/Power'] = round((meter_data['isv'][1]['p']),2)
+          self._dbusservice['/Ac/L3/Current'] = self._setCurrent(round((meter_data['isv'][1]['i']),2), power)
+          self._dbusservice['/Ac/L3/Power'] = power
       else:
+        power = round((meter_data['isv'][0]['p']),2)
         self._dbusservice["/Ac/L1/Voltage"] = round((meter_data['usv'][0]['u1']),2)
-        self._dbusservice['/Ac/L1/Current'] = round((meter_data['isv'][0]['i']),2)
-        self._dbusservice['/Ac/L1/Power'] = round((meter_data['isv'][0]['p']),2)        
+        self._dbusservice['/Ac/L1/Current'] = self._setCurrent(round((meter_data['isv'][0]['i']),2), power)
+        self._dbusservice['/Ac/L1/Power'] = power        
         if self._SwitchL2L3==True:
+          power = round((meter_data['isv'][2]['p']),2)
           self._dbusservice['/Ac/L2/Voltage'] = round((meter_data['usv'][0]['u3']),2)
-          self._dbusservice['/Ac/L2/Current'] = round((meter_data['isv'][2]['i']),2)
-          self._dbusservice['/Ac/L2/Power'] = round((meter_data['isv'][2]['p']),2)
+          self._dbusservice['/Ac/L2/Current'] = self._setCurrent(round((meter_data['isv'][2]['i']),2), power)
+          self._dbusservice['/Ac/L2/Power'] = power
+          power = round((meter_data['isv'][1]['p']),2)
           self._dbusservice['/Ac/L3/Voltage'] = round((meter_data['usv'][0]['u2']),2)
-          self._dbusservice['/Ac/L3/Current'] = round((meter_data['isv'][1]['i']),2)
-          self._dbusservice['/Ac/L3/Power'] = round((meter_data['isv'][1]['p']),2)
+          self._dbusservice['/Ac/L3/Current'] = self._setCurrent(round((meter_data['isv'][1]['i']),2), power)
+          self._dbusservice['/Ac/L3/Power'] = power
         else:
+          power = round((meter_data['isv'][1]['p']),2)
           self._dbusservice['/Ac/L2/Voltage'] = round((meter_data['usv'][0]['u2']),2)
-          self._dbusservice['/Ac/L2/Current'] = round((meter_data['isv'][1]['i']),2)
-          self._dbusservice['/Ac/L2/Power'] = round((meter_data['isv'][1]['p']),2)
+          self._dbusservice['/Ac/L2/Current'] = self._setCurrent(round((meter_data['isv'][1]['i']),2), power)
+          self._dbusservice['/Ac/L2/Power'] = power
+          power = round((meter_data['isv'][2]['p']),2)
           self._dbusservice['/Ac/L3/Voltage'] = round((meter_data['usv'][0]['u3']),2)
-          self._dbusservice['/Ac/L3/Current'] = round((meter_data['isv'][2]['i']),2)
-          self._dbusservice['/Ac/L3/Power'] = round((meter_data['isv'][2]['p']),2)
+          self._dbusservice['/Ac/L3/Current'] = self._setCurrent(round((meter_data['isv'][2]['i']),2), power)
+          self._dbusservice['/Ac/L3/Power'] = power
         
 #      self._dbusservuce['/ac/L1/PowerFactor'] = round((meter_data['isv'][0]['f']),3)
 #      self._dbusservice['/ac/L2/PowerVactor'] = round((meter_data['isv'][1]['f']),3)
