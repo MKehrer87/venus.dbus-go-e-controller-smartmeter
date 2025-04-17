@@ -97,6 +97,7 @@ class DbusGoeControllerService:
     return True
 
   def _setCurrent(self, current, power):
+    #return current
     if power>0 and current<0:
        return current*-1.0
     elif power<0 and current>0:
@@ -205,8 +206,12 @@ class DbusGoeControllerService:
 #      self._dbusservuce['/ac/L1/PowerFactor'] = round((meter_data['isv'][0]['f']),3)
 #      self._dbusservice['/ac/L2/PowerVactor'] = round((meter_data['isv'][1]['f']),3)
 #      self._dbusservice['/ac/L3/PowerFactor'] = round((meter_data['isv'][2]['f']),3)
-      self._dbusservice['/Ac/Energy/Forward'] = round(((meter_data['cec'][0][0])/1000),4)
-      self._dbusservice['/Ac/Energy/Reverse'] = round(((meter_data['cec'][0][1])/1000),4)
+# Use Home
+      #self._dbusservice['/Ac/Energy/Forward'] = round(((meter_data['cec'][0][0])/1000),4)
+      #self._dbusservice['/Ac/Energy/Reverse'] = round(((meter_data['cec'][0][1])/1000),4)
+# Use Grid
+      self._dbusservice['/Ac/Energy/Forward'] = round(((meter_data['cec'][1][0])/1000),4)
+      self._dbusservice['/Ac/Energy/Reverse'] = round(((meter_data['cec'][1][1])/1000),4)
 #      logging.info("House Consumption: {:.0f}".format(meter_consumption))
     except:
       logging.info("WARNING: Could not read from Go-E Controller SmartMeter")
